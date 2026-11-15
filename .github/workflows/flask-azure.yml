@@ -17,18 +17,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: Instalar dependências e checar o app
         run: |
           pip install -r $APP_DIR/requirements.txt
-          python -c "import sys; sys.path.insert(0, '$APP_DIR'); from app import app; c = app.test_client(); r = c.get('/'); assert r.status_code == 200, r.status_code; print('GET / ->', r.status_code)"
+          python -c "import sys; sys.path.insert(0, '$APP_DIR'); from app import app; c = app.test_client(); r = c.get('/'); assert r.status_code == 200, r.status_code; print('GET / ->', r.status_code); r = c.get('/items'); assert r.status_code == 200 and r.json['items'], r.status_code; print('GET /items ->', r.status_code)"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: flask-app
           path: ${{ env.APP_DIR }}
@@ -40,7 +40,7 @@ jobs:
       name: production
       url: ${{ steps.deploy.outputs.webapp-url }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: flask-app
           path: app
