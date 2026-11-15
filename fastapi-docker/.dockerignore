@@ -1,0 +1,20 @@
+# Ambiente virtual e caches do Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Git, editores e sistema
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+
+# Arquivos que não precisam ir para a imagem
+Dockerfile
+.dockerignore
+README.md
+*.md

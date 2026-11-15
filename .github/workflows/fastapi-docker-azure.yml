@@ -1,0 +1,62 @@
+# 9.6 - CI/CD: build da imagem Docker do FastAPI, push no GitHub Container Registry
+# e deploy do container na Azure App Service
+name: FastAPI Docker -> Azure App Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "fastapi-docker/**"
+      - ".github/workflows/fastapi-docker-azure.yml"
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: engsoft-lab9-fastapi
+  IMAGE: ghcr.io/henriquersouza/lab9-fastapi
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push da imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: fastapi-docker
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      - name: Testar a imagem
+        run: |
+          docker run -d --name api -p 8000:8000 ${{ env.IMAGE }}:${{ github.sha }}
+          for i in $(seq 1 15); do curl -fs http://localhost:8000/items && break; sleep 1; done
+          curl -fs http://localhost:8000/items | grep -q "Item 1"
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: production-fastapi
+      url: ${{ steps.deploy.outputs.webapp-url }}
+    steps:
+      - name: Deploy do container na Azure App Service
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_FASTAPI_PUBLISH_PROFILE }}
+          images: ${{ env.IMAGE }}:${{ github.sha }}
