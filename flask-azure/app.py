@@ -1,0 +1,12 @@
+from flask import Flask
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def hello_world():
+    return "<h1>Hello World!</h1><p>Flask rodando na Azure App Service (Lab 9.3)</p>"
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5001)

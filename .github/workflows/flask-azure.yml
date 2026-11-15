@@ -1,0 +1,54 @@
+# 9.3 / 9.4 - CI/CD: deploy do app Flask (pasta flask-azure) na Azure App Service
+name: Flask -> Azure App Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "flask-azure/**"
+      - ".github/workflows/flask-azure.yml"
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: engsoft-lab9-flask
+  APP_DIR: flask-azure
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências e checar o app
+        run: |
+          pip install -r $APP_DIR/requirements.txt
+          python -c "import sys; sys.path.insert(0, '$APP_DIR'); from app import app; c = app.test_client(); r = c.get('/'); assert r.status_code == 200, r.status_code; print('GET / ->', r.status_code)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flask-app
+          path: ${{ env.APP_DIR }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.webapp-url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: flask-app
+          path: app
+
+      - name: Deploy na Azure App Service
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_FLASK_PUBLISH_PROFILE }}
+          package: app
