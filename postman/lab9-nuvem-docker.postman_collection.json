@@ -1,0 +1,967 @@
+{
+  "info": {
+    "_postman_id": "58e3e57b-c56b-4987-94c7-311179d914dd",
+    "name": "Lab 9 - Nuvem e Docker (9.4, 9.5 e 9.6)",
+    "description": "Testes das APIs do Lab 9 (Mackenzie) publicadas na Azure e rodando em Docker.\n\nRepositório: https://github.com/HenriqueRSouza/eng-software-lab-9-api-rest\n\n- **9.4 Flask na Azure**: {{flask_azure_url}}\n- **9.5 FastAPI no Docker local**: {{fastapi_docker_url}} (`docker run -p 8000:8000 lab9-fastapi`)\n- **9.6 FastAPI (Docker) na Azure**: {{fastapi_azure_url}}\n\nUse **Run collection** em cada pasta.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "9.4 - Flask na Azure",
+      "item": [
+        {
+          "name": "Listar itens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Retorna a lista de itens\", () => {",
+                  "    const items = pm.response.json().items;",
+                  "    pm.expect(items).to.be.an(\"array\");",
+                  "    items.forEach(i => pm.expect(i).to.have.all.keys(\"id\", \"name\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{flask_azure_url}}/items"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar item 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Retorna o item de id 1\", () => pm.expect(pm.response.json().item.id).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{flask_azure_url}}/items/1"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar item inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().error).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{flask_azure_url}}/items/999999"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const item = pm.response.json().item;",
+                  "pm.test(\"Item criado com o nome enviado\", () => {",
+                  "    pm.expect(item.id).to.be.a(\"number\");",
+                  "    pm.expect(item.name).to.eql(\"Item criado pelo Postman\");",
+                  "});",
+                  "pm.collectionVariables.set(\"flask_item_id\", item.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{flask_azure_url}}/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Item criado pelo Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Criar item sem name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Informa que o campo name é obrigatório\", () => pm.expect(pm.response.json().error).to.eql(\"Field 'name' is required\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{flask_azure_url}}/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar item criado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Nome atualizado\", () => {",
+                  "    const item = pm.response.json().item;",
+                  "    pm.expect(item.id).to.eql(Number(pm.collectionVariables.get(\"flask_item_id\")));",
+                  "    pm.expect(item.name).to.eql(\"Item atualizado\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{flask_azure_url}}/items/{{flask_item_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Item atualizado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar item inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().error).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{flask_azure_url}}/items/999999",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Não existe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remover item criado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Mensagem de remoção\", () => pm.expect(pm.response.json().message).to.eql(\"Item deleted\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{flask_azure_url}}/items/{{flask_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Remover item já removido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().error).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{flask_azure_url}}/items/{{flask_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirmar remoção",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().error).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{flask_azure_url}}/items/{{flask_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar itens no final",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Item removido não aparece na lista\", () => {",
+                  "    const id = Number(pm.collectionVariables.get(\"flask_item_id\"));",
+                  "    pm.expect(pm.response.json().items.map(i => i.id)).to.not.include(id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{flask_azure_url}}/items"
+          },
+          "response": []
+        }
+      ],
+      "description": "API REST Flask publicada na Azure App Service via GitHub Actions."
+    },
+    {
+      "name": "9.5 - FastAPI no Docker (local)",
+      "item": [
+        {
+          "name": "Listar itens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Retorna a lista de itens\", () => {",
+                  "    const items = pm.response.json().items;",
+                  "    pm.expect(items).to.be.an(\"array\");",
+                  "    items.forEach(i => pm.expect(i).to.have.all.keys(\"id\", \"name\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_docker_url}}/items"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar item 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Retorna o item de id 1\", () => pm.expect(pm.response.json().item.id).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_docker_url}}/items/1"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar item inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().detail).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_docker_url}}/items/999999"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const item = pm.response.json().item;",
+                  "pm.test(\"Item criado com o nome enviado\", () => {",
+                  "    pm.expect(item.id).to.be.a(\"number\");",
+                  "    pm.expect(item.name).to.eql(\"Item criado pelo Postman\");",
+                  "});",
+                  "pm.collectionVariables.set(\"fastapi_item_id\", item.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{fastapi_docker_url}}/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Item criado pelo Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Criar item sem name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Erro de validação aponta o campo name\", () => {",
+                  "    const detail = pm.response.json().detail;",
+                  "    pm.expect(detail).to.be.an(\"array\");",
+                  "    pm.expect(detail[0].loc).to.include(\"name\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{fastapi_docker_url}}/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar item criado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Nome atualizado\", () => {",
+                  "    const item = pm.response.json().item;",
+                  "    pm.expect(item.id).to.eql(Number(pm.collectionVariables.get(\"fastapi_item_id\")));",
+                  "    pm.expect(item.name).to.eql(\"Item atualizado\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{fastapi_docker_url}}/items/{{fastapi_item_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Item atualizado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar item inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().detail).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{fastapi_docker_url}}/items/999999",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Não existe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remover item criado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Mensagem de remoção\", () => pm.expect(pm.response.json().message).to.eql(\"Item deleted\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{fastapi_docker_url}}/items/{{fastapi_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Remover item já removido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().detail).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{fastapi_docker_url}}/items/{{fastapi_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirmar remoção",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().detail).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_docker_url}}/items/{{fastapi_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar itens no final",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Item removido não aparece na lista\", () => {",
+                  "    const id = Number(pm.collectionVariables.get(\"fastapi_item_id\"));",
+                  "    pm.expect(pm.response.json().items.map(i => i.id)).to.not.include(id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_docker_url}}/items"
+          },
+          "response": []
+        }
+      ],
+      "description": "Container Docker rodando localmente na porta 8000."
+    },
+    {
+      "name": "9.6 - FastAPI (Docker) na Azure",
+      "item": [
+        {
+          "name": "Listar itens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Retorna a lista de itens\", () => {",
+                  "    const items = pm.response.json().items;",
+                  "    pm.expect(items).to.be.an(\"array\");",
+                  "    items.forEach(i => pm.expect(i).to.have.all.keys(\"id\", \"name\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_azure_url}}/items"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar item 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Retorna o item de id 1\", () => pm.expect(pm.response.json().item.id).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_azure_url}}/items/1"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar item inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().detail).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_azure_url}}/items/999999"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const item = pm.response.json().item;",
+                  "pm.test(\"Item criado com o nome enviado\", () => {",
+                  "    pm.expect(item.id).to.be.a(\"number\");",
+                  "    pm.expect(item.name).to.eql(\"Item criado pelo Postman\");",
+                  "});",
+                  "pm.collectionVariables.set(\"fastapi_item_id\", item.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{fastapi_azure_url}}/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Item criado pelo Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Criar item sem name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Erro de validação aponta o campo name\", () => {",
+                  "    const detail = pm.response.json().detail;",
+                  "    pm.expect(detail).to.be.an(\"array\");",
+                  "    pm.expect(detail[0].loc).to.include(\"name\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{fastapi_azure_url}}/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar item criado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Nome atualizado\", () => {",
+                  "    const item = pm.response.json().item;",
+                  "    pm.expect(item.id).to.eql(Number(pm.collectionVariables.get(\"fastapi_item_id\")));",
+                  "    pm.expect(item.name).to.eql(\"Item atualizado\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{fastapi_azure_url}}/items/{{fastapi_item_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Item atualizado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar item inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().detail).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{fastapi_azure_url}}/items/999999",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Não existe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remover item criado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Mensagem de remoção\", () => pm.expect(pm.response.json().message).to.eql(\"Item deleted\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{fastapi_azure_url}}/items/{{fastapi_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Remover item já removido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().detail).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{fastapi_azure_url}}/items/{{fastapi_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirmar remoção",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensagem de item não encontrado\", () => pm.expect(pm.response.json().detail).to.eql(\"Item not found\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_azure_url}}/items/{{fastapi_item_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar itens no final",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Item removido não aparece na lista\", () => {",
+                  "    const id = Number(pm.collectionVariables.get(\"fastapi_item_id\"));",
+                  "    pm.expect(pm.response.json().items.map(i => i.id)).to.not.include(id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{fastapi_azure_url}}/items"
+          },
+          "response": []
+        }
+      ],
+      "description": "Imagem Docker publicada no GHCR e implantada na Azure App Service via GitHub Actions."
+    }
+  ],
+  "variable": [
+    {
+      "key": "flask_azure_url",
+      "value": "https://engsoft-lab9-flask.azurewebsites.net"
+    },
+    {
+      "key": "fastapi_docker_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "fastapi_azure_url",
+      "value": "https://engsoft-lab9-fastapi.azurewebsites.net"
+    },
+    {
+      "key": "flask_item_id",
+      "value": "3"
+    },
+    {
+      "key": "fastapi_item_id",
+      "value": "3"
+    }
+  ]
+}
